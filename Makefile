@@ -1,7 +1,7 @@
-P = pusherman
-OBJS = main.o
+P = shopclock
+OBJS = main.o ht16k3.o
 CFLAGS = -g -Wall -Wstrict-prototypes
-LDLIBS = -lb -lwiringPi
+LDLIBS = -lb
 
 $(P): $(OBJS)
 	$(CC) -o $(P) $(LDFLAGS) $(OBJS) $(LDLIBS)
