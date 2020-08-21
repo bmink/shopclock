@@ -1,13 +1,19 @@
 #ifndef HT16K3_H
 #define HT16K3_H
 
+#include "bstr.h"
+
 #define HT16K3_MAX_MEM	16
 
 typedef struct ht16k3 {
+	int	ht_busnr;
+	int	ht_addr;
+	bstr_t	*ht_filen;
 
 	char	ht_mem[HT16K3_MAX_MEM];
 
 } ht16k3_t;
+
 
 
 ht16k3_t *ht16k3_init(int, int);
