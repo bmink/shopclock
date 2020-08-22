@@ -1,5 +1,5 @@
 P = shopclock
-OBJS = main.o ht16k3.o
+OBJS = main.o ht16k33.o
 CFLAGS = -g -Wall -Wstrict-prototypes
 LDLIBS = -lb
 

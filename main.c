@@ -3,6 +3,7 @@
 #include <errno.h>
 #include "bstr.h"
 #include "blog.h"
+#include "ht16k33.h"
 
 
 #define I2C_BUSNR	1
@@ -12,8 +13,9 @@
 int
 main(int argc, char **argv)
 {
-	int	ret;
-	char	*execn;
+	int		ret;
+	char		*execn;
+	ht16k33_t	*ht;
 
 	execn = basename(argv[0]);
 	if(xstrempty(execn)) {
@@ -28,6 +30,11 @@ main(int argc, char **argv)
 		goto end_label;
 	}
 
+	ht = ht16k33_init(I2C_BUSNR, I2C_ADDR);
+	if(ht == NULL) {
+		fprintf(stderr, "Could not initialize ht16k33\n");
+		goto end_label;
+	}
 
 end_label:
 	blog_uninit();
