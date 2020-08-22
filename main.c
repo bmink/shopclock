@@ -36,6 +36,9 @@ main(int argc, char **argv)
 		goto end_label;
 	}
 
+	
+	ht16k33_setled(ht, 0, 0, HT16K33_LED_ON);
+	ht16k33_setled(ht, 0, 1, HT16K33_LED_ON);
 	ht16k33_printleds(ht);
 
 end_label:
