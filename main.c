@@ -36,6 +36,8 @@ main(int argc, char **argv)
 		goto end_label;
 	}
 
+	ht16k33_printleds(ht);
+
 end_label:
 	blog_uninit();
 

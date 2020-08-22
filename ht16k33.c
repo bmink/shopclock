@@ -1,5 +1,4 @@
 #include <stddef.h>
-#include <stdint.h>
 #include <linux/i2c.h>
 #include <linux/i2c-dev.h>
 #include <errno.h>
@@ -7,6 +6,7 @@
 #include <sys/ioctl.h>
 #include "ht16k33.h"
 #include "blog.h"
+#include "bint.h"
 
 static int ht16k33_check_i2c_func(ht16k33_t *);
 static int ht16k33_write_byte(ht16k33_t *, uint8_t);
@@ -91,25 +91,6 @@ ht16k33_init(int busnr, int addr)
 		err = ret;
 		goto end_label;
 	}
-
-	uint8_t full[] = { 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00,
-		0x00, 0x00, 0x00, 0x00 };
-
-	ret = ht16k33_write_buf(ht, full, 17);
-	if(ret != 0) {
-		blogf("Couldn't turn on LEDs.");
-		err = ret;
-		goto end_label;
-	}
-
-
-
-	
-
-/* USE I2C_FUNCS to see what is supported: https://stackoverflow.com/questions/9974592/i2c-slave-ioctl-purpose */
 
 end_label:
 
@@ -203,4 +184,80 @@ ht16k33_write_buf(ht16k33_t *ht, void *buf, size_t siz)
 	return 0;
 }
 
+int
+ht16k33_clearleds(ht16k33_t *ht)
+{
+	if(ht == NULL)
+		return EINVAL;
 
+	memset(ht->ht_cols, 0, HT16K33_COL_CNT);
+
+	return 0;
+}
+
+
+int
+ht16k33_setled(ht16k33_t *ht, int x, int y, int onoff)
+{
+	if(ht == NULL ||
+	    !bint_betw(x, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL) ||
+	    !bint_betw(y, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL))
+		return EINVAL;
+
+	switch(onoff) {
+	case HT16K33_LED_OFF:
+		ht->ht_cols[x] &= ~(1 << y);
+		break;
+	case HT16K33_LED_ON:
+		ht->ht_cols[x] |= 1 << y;
+		break;
+	case HT16K33_LED_TOGGLE:
+		ht->ht_cols[x] ^= 1 << y;
+		break;
+	default:
+		blogf("Wrong onoff value: %d", onoff);
+		break;
+	}
+
+	return 0;
+}
+
+
+int
+ht16k33_ledison(ht16k33_t *ht, int x, int y)
+{
+	if(ht == NULL ||
+	    !bint_betw(x, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL) ||
+	    !bint_betw(y, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL)) {
+		blogf("Invalid coordinates");
+		return 0;
+	}
+
+	if(ht->ht_cols[x] & (1 << y))
+		return 1;
+	else
+		return 0;
+}
+
+
+int
+ht16k33_printleds(ht16k33_t *ht)
+{
+	int	x;
+	int	y;
+
+	if(ht == NULL)
+		return EINVAL;
+
+	for(y = 0; y < HT16K33_ROW_CNT; ++y) {
+		for(x = 0; x < HT16K33_COL_CNT; ++x) {
+			if(ht16k33_ledison(ht, x, y))
+				printf("#");
+			else
+				printf(".");
+		}
+		printf("\n");
+	}
+
+	return 0;
+}
