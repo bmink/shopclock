@@ -60,7 +60,6 @@ ht16k33_init(int busnr, int addr)
 	} else
 		ht->ht_fd = ret;
 
-
 	/* Check if we fully support I2C */
 	ret = ht16k33_check_i2c_func(ht);
 	if(ret != 0) {
@@ -93,11 +92,11 @@ ht16k33_init(int busnr, int addr)
 		goto end_label;
 	}
 
-	uint16_t full[] = { 0x00,
-		0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff,
-		0xff, 0xff, 0xff, 0xff };
+	uint8_t full[] = { 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00 };
 
 	ret = ht16k33_write_buf(ht, full, 17);
 	if(ret != 0) {
@@ -180,8 +179,8 @@ ht16k33_write_buf(ht16k33_t *ht, void *buf, size_t siz)
 	 * https://gist.github.com/JamesDunne/9b7fbedb74c22ccc833059623f47beb7
 	 */
 
-	struct i2c_msg			msg[1];
-	struct i2c_rdwr_ioctl_data	iodat[1];
+	struct i2c_msg			msg;
+	struct i2c_rdwr_ioctl_data	iodat;
 	int				ret;
 
 	if(ht == NULL || buf == NULL || siz == 0)
