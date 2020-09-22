@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <libgen.h>
 #include <errno.h>
+#include <unistd.h>
+#include <time.h>
 #include "bstr.h"
 #include "blog.h"
 #include "ht16k33.h"
@@ -16,6 +18,9 @@ main(int argc, char **argv)
 	int		ret;
 	char		*execn;
 	ht16k33_t	*ht;
+	int		i;
+	int		t;
+	struct timespec ts;
 
 	execn = basename(argv[0]);
 	if(xstrempty(execn)) {
@@ -37,9 +42,27 @@ main(int argc, char **argv)
 	}
 
 	
-	ht16k33_setled(ht, 0, 0, HT16K33_LED_ON);
-	ht16k33_setled(ht, 0, 1, HT16K33_LED_ON);
-	ht16k33_printleds(ht);
+	//ht16k33_setled(ht, 0, 0, HT16K33_LED_ON);
+	//ht16k33_setled(ht, 0, 1, HT16K33_LED_ON);
+	//ht16k33_printleds(ht);
+	//ht16k33_printleds(ht);
+
+	ht16k33_clearleds(ht);
+	ht16k33_refreshleds(ht);
+
+	ts.tv_sec = 0;
+	ts.tv_nsec = 5000000;
+
+	while(1) {
+		for(i = 0; i < 16; i += 2) {
+			for(t = 0; t < 8; ++t) {
+				ht16k33_toggleled(ht, i, t);
+				ht16k33_refreshleds(ht);
+				nanosleep(&ts, NULL);
+			}
+		}
+	}
+
 
 end_label:
 	blog_uninit();

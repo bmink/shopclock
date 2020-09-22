@@ -68,6 +68,7 @@ ht16k33_init(int busnr, int addr)
 		goto end_label;
 	}
 
+
 	/* Start the oscillator. */
 	ret = ht16k33_write_byte(ht, HT16K33_CMD_START_OSC);
 	if(ret != 0) {
@@ -190,53 +191,73 @@ ht16k33_clearleds(ht16k33_t *ht)
 	if(ht == NULL)
 		return EINVAL;
 
-	memset(ht->ht_cols, 0, HT16K33_COL_CNT);
+	memset(ht->ht_bufcmd, 0, HT16K33_BUFCMDSIZ);
 
 	return 0;
 }
 
+static uint8_t colbit_def[HT16K33_COL_CNT] = {
+	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
+};
+
+static uint8_t colbit_ada[HT16K33_COL_CNT] = {
+	0x80, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40
+};
+
 
 int
-ht16k33_setled(ht16k33_t *ht, int x, int y, int onoff)
+ht16k33_setled(ht16k33_t *ht, int row, int col)
 {
 	if(ht == NULL ||
-	    !bint_betw(x, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL) ||
-	    !bint_betw(y, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL))
+	    !bint_betw(row, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL) ||
+	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL))
 		return EINVAL;
 
-	switch(onoff) {
-	case HT16K33_LED_OFF:
-		ht->ht_cols[x] &= ~(1 << y);
-		break;
-	case HT16K33_LED_ON:
-		ht->ht_cols[x] |= 1 << y;
-		break;
-	case HT16K33_LED_TOGGLE:
-		ht->ht_cols[x] ^= 1 << y;
-		break;
-	default:
-		blogf("Wrong onoff value: %d", onoff);
-		break;
-	}
+	ht->ht_bufcmd[row + 1] |= colbit_ada[col];
 
 	return 0;
 }
 
 
 int
-ht16k33_ledison(ht16k33_t *ht, int x, int y)
+ht16k33_clearled(ht16k33_t *ht, int row, int col)
 {
 	if(ht == NULL ||
-	    !bint_betw(x, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL) ||
-	    !bint_betw(y, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL)) {
+	    !bint_betw(row, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL) ||
+	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL))
+		return EINVAL;
+
+	ht->ht_bufcmd[row + 1] &= ~colbit_ada[col];
+
+	return 0;
+}
+
+
+int
+ht16k33_toggleled(ht16k33_t *ht, int row, int col)
+{
+	if(ht == NULL ||
+	    !bint_betw(row, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL) ||
+	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL))
+		return EINVAL;
+
+	ht->ht_bufcmd[row + 1] ^= colbit_ada[col];
+
+	return 0;
+}
+
+
+int
+ht16k33_ledison(ht16k33_t *ht, int row, int col)
+{
+	if(ht == NULL ||
+	    !bint_betw(row, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL) ||
+	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL)) {
 		blogf("Invalid coordinates");
 		return 0;
 	}
 
-	if(ht->ht_cols[x] & (1 << y))
-		return 1;
-	else
-		return 0;
+	return ht->ht_bufcmd[row + 1] & colbit_ada[col];
 }
 
 
@@ -260,4 +281,14 @@ ht16k33_printleds(ht16k33_t *ht)
 	}
 
 	return 0;
+}
+
+
+int
+ht16k33_refreshleds(ht16k33_t *ht)
+{
+	if(ht == NULL)
+		return EINVAL;
+
+	return ht16k33_write_buf(ht, ht->ht_bufcmd, HT16K33_BUFCMDSIZ);
 }
