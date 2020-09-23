@@ -6,13 +6,13 @@ static char digitdef[10][64] =
 {
 
       // 01234567
-	" XXXXX  "
-	"XX   XX "
-	"XX  XXX "
-	"XX XXXX "
-	"XXXX XX "
-	"XXX  XX "
-	" XXXXX  "
+	"  XXXX  "
+	" XX  XX "
+	" XX XXX "
+	" XXXXXX "
+	" XXX XX "
+	" XX  XX "
+	"  XXXX  "
         "        ",
 
       // 01234567
@@ -50,8 +50,8 @@ static char digitdef[10][64] =
         "   XXX  "
         "  XXXX  "
         " XX XX  "
-        "XX  XX  "
-        "XXXXXXX "
+        " XX XX  "
+        " XXXXXX "
         "    XX  "
         "   XXXX "
 	"        ",
