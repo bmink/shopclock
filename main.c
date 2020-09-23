@@ -115,6 +115,9 @@ main(int argc, char **argv)
 		ht16k33_setleds(ht, l[i] + sliceof[slice] * 8);
 		ht16k33_refreshleds(ht);
 
+		ht16k33_printleds(ht);
+		printf("\n");
+		fflush(stdout);
 	}
 
 
