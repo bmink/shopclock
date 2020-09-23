@@ -12,7 +12,7 @@ static int ht16k33_check_i2c_func(ht16k33_t *);
 
 #define HT16K33_CMD_START_OSC		0x21
 #define HT16K33_CMD_DISP_ON_BLINK_OFF	0x81
-#define HT16K33_CMD_BRIGHTNESS_FULL	0xe5
+#define HT16K33_CMD_BRIGHTNESS_FULL	0xe1
 
 
 static uint8_t colbits_def[] = {

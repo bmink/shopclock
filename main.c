@@ -24,14 +24,23 @@ int sliceof[50] = {
 };
 #endif
 
+/*
 int sliceof[30] = {
 	0, 0, 0, 0, 0, 0,
-	0, 0, 0, 1, 1, 1,
+	1, 1, 1, 1, 2, 2,
 	2, 2, 3, 3, 4, 5,
 	6, 7, 8, 9, 9, 10,
-	10, 11, 11, 11, 10, 8
+	10, 10, 11, 11, 11, 11 
 };
+*/
 
+int sliceof[30] = {
+	0, 0, 0, 0, 0, 0,
+	1, 1, 1, 1, 2, 2,
+	2, 2, 3, 3, 4, 5,
+	6, 7, 8, 9, 9, 10,
+	10, 11, 11, 6, 6, 7
+};
 
 int
 main(int argc, char **argv)
@@ -111,13 +120,17 @@ main(int argc, char **argv)
 		i = nowtm->tm_sec % 10;
 
 		slice = nowtv.tv_usec / (1000000 / 30);
+		if(slice > 29)
+			slice = 29;
 
 		ht16k33_setleds(ht, l[i] + sliceof[slice] * 8);
 		ht16k33_refreshleds(ht);
 
+/*
 		ht16k33_printleds(ht);
 		printf("\n");
 		fflush(stdout);
+*/
 	}
 
 
