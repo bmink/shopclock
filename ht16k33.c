@@ -9,17 +9,24 @@
 #include "bint.h"
 
 static int ht16k33_check_i2c_func(ht16k33_t *);
-static int ht16k33_write_byte(ht16k33_t *, uint8_t);
-static int ht16k33_write_word(ht16k33_t *, uint16_t);
-static int ht16k33_write_reg(ht16k33_t *, uint16_t);
-static int ht16k33_write_buf(ht16k33_t *, void *, size_t);
 
 #define HT16K33_CMD_START_OSC		0x21
 #define HT16K33_CMD_DISP_ON_BLINK_OFF	0x81
 #define HT16K33_CMD_BRIGHTNESS_FULL	0xef
 
+
+static uint8_t colbits_def[] = {
+	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
+};
+
+/* Column addressing is a bit weird on Adafruit hardware... */
+static uint8_t colbits_ada[] = {
+	0x80, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40
+};
+
+
 ht16k33_t *
-ht16k33_init(int busnr, int addr)
+ht16k33_init(int busnr, int addr, int mode)
 {
 
 	int		err;
@@ -28,6 +35,12 @@ ht16k33_init(int busnr, int addr)
 
 	err = 0;
 	ht = NULL;
+
+	if(mode >= HT16K33_MODE_CNT) {
+		blogf("Wrong mode specified");
+		err = EINVAL;
+		goto end_label;
+	}
 
 	ht = malloc(sizeof(ht16k33_t));
 	if(ht == NULL) {
@@ -40,6 +53,20 @@ ht16k33_init(int busnr, int addr)
 
 	ht->ht_busnr = busnr;
 	ht->ht_addr = addr;
+
+	ht->ht_mode = mode;
+	switch(mode) {
+	case HT16K33_MODE_ADA_8X8:
+		ht->ht_colbits = colbits_ada;
+		ht->ht_rowcnt = 8;
+		ht->ht_row_multiplier = 2;
+		break;
+	default:
+		ht->ht_colbits = colbits_def;
+		ht->ht_rowcnt = HT16K33_ROW_CNT;
+		ht->ht_row_multiplier = 1;
+		break;
+	}
 
 
 	ht->ht_filen = binit();
@@ -140,19 +167,19 @@ ht16k33_check_i2c_func(ht16k33_t *ht)
 }
 
 
-static int
+int
 ht16k33_write_byte(ht16k33_t *ht, uint8_t byte)
 {
 	return ht16k33_write_buf(ht, &byte, 1);
 }
 
-static int
+int
 ht16k33_write_word(ht16k33_t *ht, uint16_t word)
 {
 	return ht16k33_write_buf(ht, &word, 2);
 }
 
-static int
+int
 ht16k33_write_buf(ht16k33_t *ht, void *buf, size_t siz)
 {
 	/*
@@ -196,24 +223,16 @@ ht16k33_clearleds(ht16k33_t *ht)
 	return 0;
 }
 
-static uint8_t colbit_def[HT16K33_COL_CNT] = {
-	0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
-};
-
-static uint8_t colbit_ada[HT16K33_COL_CNT] = {
-	0x80, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40
-};
-
 
 int
 ht16k33_setled(ht16k33_t *ht, int row, int col)
 {
 	if(ht == NULL ||
-	    !bint_betw(row, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL) ||
+	    !bint_betw(row, 0, BINT_INCL, ht->ht_rowcnt, BINT_EXCL) ||
 	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL))
 		return EINVAL;
 
-	ht->ht_bufcmd[row + 1] |= colbit_ada[col];
+	ht->ht_bufcmd[(row * ht->ht_row_multiplier) + 1] |= ht->ht_colbits[col];
 
 	return 0;
 }
@@ -223,11 +242,12 @@ int
 ht16k33_clearled(ht16k33_t *ht, int row, int col)
 {
 	if(ht == NULL ||
-	    !bint_betw(row, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL) ||
+	    !bint_betw(row, 0, BINT_INCL, ht->ht_rowcnt, BINT_EXCL) ||
 	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL))
 		return EINVAL;
 
-	ht->ht_bufcmd[row + 1] &= ~colbit_ada[col];
+	ht->ht_bufcmd[(row * ht->ht_row_multiplier) + 1] &=
+	    ~ht->ht_colbits[col];
 
 	return 0;
 }
@@ -237,11 +257,12 @@ int
 ht16k33_toggleled(ht16k33_t *ht, int row, int col)
 {
 	if(ht == NULL ||
-	    !bint_betw(row, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL) ||
+	    !bint_betw(row, 0, BINT_INCL, ht->ht_rowcnt, BINT_EXCL) ||
 	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL))
 		return EINVAL;
 
-	ht->ht_bufcmd[row + 1] ^= colbit_ada[col];
+	ht->ht_bufcmd[(row * ht->ht_row_multiplier) + 1] ^=
+	    ht->ht_colbits[col];
 
 	return 0;
 }
@@ -251,28 +272,29 @@ int
 ht16k33_ledison(ht16k33_t *ht, int row, int col)
 {
 	if(ht == NULL ||
-	    !bint_betw(row, 0, BINT_INCL, HT16K33_ROW_CNT, BINT_EXCL) ||
+	    !bint_betw(row, 0, BINT_INCL, ht->ht_rowcnt, BINT_EXCL) ||
 	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL)) {
 		blogf("Invalid coordinates");
 		return 0;
 	}
 
-	return ht->ht_bufcmd[row + 1] & colbit_ada[col];
+	return ht->ht_bufcmd[(row * ht->ht_row_multiplier) + 1] &
+	    ht->ht_colbits[col];
 }
 
 
 int
 ht16k33_printleds(ht16k33_t *ht)
 {
-	int	x;
-	int	y;
+	int	row;
+	int	col;
 
 	if(ht == NULL)
 		return EINVAL;
 
-	for(y = 0; y < HT16K33_ROW_CNT; ++y) {
-		for(x = 0; x < HT16K33_COL_CNT; ++x) {
-			if(ht16k33_ledison(ht, x, y))
+	for(row = 0; row < ht->ht_rowcnt; ++row) {
+		for(col = 0; col < HT16K33_COL_CNT; ++col) {
+			if(ht16k33_ledison(ht, row, col))
 				printf("#");
 			else
 				printf(".");

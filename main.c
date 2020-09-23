@@ -35,7 +35,7 @@ main(int argc, char **argv)
 		goto end_label;
 	}
 
-	ht = ht16k33_init(I2C_BUSNR, I2C_ADDR);
+	ht = ht16k33_init(I2C_BUSNR, I2C_ADDR, HT16K33_MODE_ADA_8X8);
 	if(ht == NULL) {
 		fprintf(stderr, "Could not initialize ht16k33\n");
 		goto end_label;
@@ -54,10 +54,16 @@ main(int argc, char **argv)
 	ts.tv_nsec = 5000000;
 
 	while(1) {
-		for(i = 0; i < 16; i += 2) {
+		for(i = 0; i < 8; ++i) {
 			for(t = 0; t < 8; ++t) {
 				ht16k33_toggleled(ht, i, t);
 				ht16k33_refreshleds(ht);
+
+/*
+				printf("\n\n");
+				ht16k33_printleds(ht);
+*/
+				
 				nanosleep(&ts, NULL);
 			}
 		}

@@ -21,6 +21,10 @@ typedef struct ht16k33 {
 	bstr_t	*ht_filen;
 	int	ht_fd;
 
+	uint8_t *ht_colbits;
+	int	ht_rowcnt;
+	int	ht_row_multiplier;
+
 	uint8_t	ht_bufcmd[HT16K33_BUFCMDSIZ];	/* First byte 0x00 (=command
 						 * for "write display buffer
 						 * starting at address 0,
@@ -37,7 +41,6 @@ void ht16k33_uninit(ht16k33_t **);
 /* Convenient LED functions */
 int ht16k33_clearleds(ht16k33_t *);
 int ht16k33_setled(ht16k33_t *, int, int);
-int ht16k33_unsetled(ht16k33_t *, int, int);
 int ht16k33_toggleled(ht16k33_t *, int, int);
 int ht16k33_ledison(ht16k33_t *, int, int);
 int ht16k33_refreshleds(ht16k33_t *);
