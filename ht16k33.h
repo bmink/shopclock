@@ -41,10 +41,12 @@ void ht16k33_uninit(ht16k33_t **);
 /* Convenient LED functions */
 int ht16k33_clearleds(ht16k33_t *);
 int ht16k33_setled(ht16k33_t *, int, int);
+int ht16k33_clearled(ht16k33_t *, int, int);
 int ht16k33_toggleled(ht16k33_t *, int, int);
 int ht16k33_ledison(ht16k33_t *, int, int);
 int ht16k33_refreshleds(ht16k33_t *);
 int ht16k33_printleds(ht16k33_t *);
+int ht16k33_setleds(ht16k33_t *, uint8_t *);
 
 
 /* Functions to directly write data to the HT16K33 */
@@ -52,8 +54,6 @@ int ht16k33_write_byte(ht16k33_t *, uint8_t);
 int ht16k33_write_word(ht16k33_t *, uint16_t);
 int ht16k33_write_reg(ht16k33_t *, uint16_t);
 int ht16k33_write_buf(ht16k33_t *, void *, size_t);
-
-
 
 
 #endif

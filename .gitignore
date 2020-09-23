@@ -1,4 +1,4 @@
 *.o
 shopclock
 *.swp
-
+nohup.out

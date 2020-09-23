@@ -314,3 +314,31 @@ ht16k33_refreshleds(ht16k33_t *ht)
 
 	return ht16k33_write_buf(ht, ht->ht_bufcmd, HT16K33_BUFCMDSIZ);
 }
+
+
+int
+ht16k33_setleds(ht16k33_t *ht, uint8_t *leds)
+{
+	/* Sets all leds in a single call. The passed in int array must be
+	 * of the correct size. (E.g. in ADA_8X8 mode, it must be 64 bytes. */
+
+	int	row;
+	int	col;
+	uint8_t	*cur;
+
+	if(ht == NULL || leds == NULL)
+		return EINVAL;
+
+	cur = leds;
+	for(row = 0; row < ht->ht_rowcnt; ++row) {
+		for(col = 0; col < HT16K33_COL_CNT; ++col) {
+			if(*cur)
+				ht16k33_setled(ht, row, col);
+			else
+				ht16k33_clearled(ht, row, col);
+			++cur;
+		}
+	}
+
+	return 0;
+}
