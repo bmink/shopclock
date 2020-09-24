@@ -24,16 +24,17 @@ int sliceof[50] = {
 };
 #endif
 
-/*
+#if 1
 int sliceof[30] = {
 	0, 0, 0, 0, 0, 0,
 	1, 1, 1, 1, 2, 2,
 	2, 2, 3, 3, 4, 5,
 	6, 7, 8, 9, 9, 10,
-	10, 10, 11, 11, 11, 11 
+	10, 11, 11, 11, 11, 10
 };
-*/
+#endif
 
+#if 0
 int sliceof[30] = {
 	0, 0, 0, 0, 0, 0,
 	1, 1, 1, 1, 2, 2,
@@ -41,6 +42,7 @@ int sliceof[30] = {
 	6, 7, 8, 9, 9, 10,
 	10, 11, 11, 6, 6, 7
 };
+#endif
 
 int
 main(int argc, char **argv)
@@ -49,13 +51,9 @@ main(int argc, char **argv)
 	char		*execn;
 	ht16k33_t	*ht;
 	int		i;
-	int		t;
-	int		u;
-	int		v;
 	struct timespec ts;
 	uint8_t		l[12][64];
 	time_t		prevdate;	
-	time_t		now;	
 	struct timeval	nowtv;
 	int		slice;
 	struct tm	*nowtm;
@@ -87,6 +85,20 @@ main(int argc, char **argv)
 		goto end_label;
 	}
 
+	ret = ht16k33_setbrightness(ht, 1);
+	if(ret != 0) {
+		fprintf(stderr, "Could not set brightness.\n");
+		goto end_label;
+	}
+
+/*
+	ret = ht16k33_setrotate(ht, HT16K33_ROTATE_90);
+	if(ret != 0) {
+		fprintf(stderr, "Could not set rotate.\n");
+		goto end_label;
+	}
+*/
+
 	digit_init();
 
 	memcpy(l, digit, 10 * 64);
@@ -101,7 +113,6 @@ main(int argc, char **argv)
 	i = 0;
 	time(&prevdate);
 
-	t = 0;
 	while(1) {
 		nanosleep(&ts, NULL);
 
@@ -124,6 +135,15 @@ main(int argc, char **argv)
 			slice = 29;
 
 		ht16k33_setleds(ht, l[i] + sliceof[slice] * 8);
+
+/*
+		if(slice < 15) {
+			ht16k33_setled(ht, 2, 0);
+			ht16k33_setled(ht, 5, 0);
+		}
+*/
+
+
 		ht16k33_refreshleds(ht);
 
 /*

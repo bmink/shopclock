@@ -12,7 +12,7 @@ static int ht16k33_check_i2c_func(ht16k33_t *);
 
 #define HT16K33_CMD_START_OSC		0x21
 #define HT16K33_CMD_DISP_ON_BLINK_OFF	0x81
-#define HT16K33_CMD_BRIGHTNESS_FULL	0xe1
+#define HT16K33_CMD_BRIGHTNESS		0xe0
 
 
 static uint8_t colbits_def[] = {
@@ -68,7 +68,6 @@ ht16k33_init(int busnr, int addr, int mode)
 		break;
 	}
 
-
 	ht->ht_filen = binit();
 	if(ht->ht_filen == NULL) {
 		blogf("Couldn't allocate ht_filen");
@@ -95,7 +94,6 @@ ht16k33_init(int busnr, int addr, int mode)
 		goto end_label;
 	}
 
-
 	/* Start the oscillator. */
 	ret = ht16k33_write_byte(ht, HT16K33_CMD_START_OSC);
 	if(ret != 0) {
@@ -112,8 +110,7 @@ ht16k33_init(int busnr, int addr, int mode)
 		goto end_label;
 	}
 
-	/* Full brightness. */
-	ret = ht16k33_write_byte(ht, HT16K33_CMD_BRIGHTNESS_FULL);
+	ret = ht16k33_setbrightness(ht, HT16K33_BRIGHTNESS_MAX);
 	if(ret != 0) {
 		blogf("Couldn't set brightness.");
 		err = ret;
@@ -141,6 +138,47 @@ ht16k33_uninit(ht16k33_t **htp)
 
 	free(*htp);
 	*htp = NULL;
+}
+
+
+int
+ht16k33_setbrightness(ht16k33_t *ht, int brightness)
+{
+	int	ret;
+
+	if(ht == NULL || !bint_betw(brightness, 0, BINT_INCL,
+	    HT16K33_BRIGHTNESS_MAX, BINT_INCL))
+		return EINVAL;
+
+	/* Full brightness. */
+	ret = ht16k33_write_byte(ht,
+	    HT16K33_CMD_BRIGHTNESS | (uint8_t) brightness);
+	if(ret != 0) {
+		blogf("Couldn't send command byte.");
+		return ret;
+	}
+
+	ht->ht_brightness = HT16K33_BRIGHTNESS_MAX;
+
+	return 0;
+}
+
+
+int
+ht16k33_setrotate(ht16k33_t *ht, int rotate)
+{
+	if(ht == NULL || !bint_betw(rotate, 0, BINT_INCL,
+	    HT16K33_ROTATE_CNT, BINT_EXCL))
+		return EINVAL;
+
+	if(rotate != 0 && ht->ht_rowcnt != 8) {
+		blogf("Only 8x8 modes support rotation");
+		return EINVAL;
+	}
+
+	ht->ht_rotate = rotate;
+
+	return 0;
 }
 
 
@@ -227,12 +265,36 @@ ht16k33_clearleds(ht16k33_t *ht)
 int
 ht16k33_setled(ht16k33_t *ht, int row, int col)
 {
+	int	realrow;
+	int	realcol;
+
 	if(ht == NULL ||
 	    !bint_betw(row, 0, BINT_INCL, ht->ht_rowcnt, BINT_EXCL) ||
 	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL))
 		return EINVAL;
 
-	ht->ht_bufcmd[(row * ht->ht_row_multiplier) + 1] |= ht->ht_colbits[col];
+	switch(ht->ht_rotate) {
+	case HT16K33_ROTATE_90:
+		realrow = col;
+		realcol = HT16K33_COL_CNT - row - 1;
+		break;
+	case HT16K33_ROTATE_180:
+		realrow = ht->ht_rowcnt - row - 1;
+		realcol = HT16K33_COL_CNT - col - 1;
+		break;
+		break;
+	case HT16K33_ROTATE_270:
+		realrow = ht->ht_rowcnt - col - 1;
+		realcol = row;
+		break;
+	default:
+		realrow = row;
+		realcol = col;
+		break;
+	}
+	
+	ht->ht_bufcmd[(realrow * ht->ht_row_multiplier) + 1] |=
+	    ht->ht_colbits[realcol];
 
 	return 0;
 }
@@ -241,13 +303,36 @@ ht16k33_setled(ht16k33_t *ht, int row, int col)
 int
 ht16k33_clearled(ht16k33_t *ht, int row, int col)
 {
+	int	realrow;
+	int	realcol;
+
 	if(ht == NULL ||
 	    !bint_betw(row, 0, BINT_INCL, ht->ht_rowcnt, BINT_EXCL) ||
 	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL))
 		return EINVAL;
 
-	ht->ht_bufcmd[(row * ht->ht_row_multiplier) + 1] &=
-	    ~ht->ht_colbits[col];
+	switch(ht->ht_rotate) {
+	case HT16K33_ROTATE_90:
+		realrow = col;
+		realcol = HT16K33_COL_CNT - row - 1;
+		break;
+	case HT16K33_ROTATE_180:
+		realrow = ht->ht_rowcnt - row - 1;
+		realcol = HT16K33_COL_CNT - col - 1;
+		break;
+		break;
+	case HT16K33_ROTATE_270:
+		realrow = ht->ht_rowcnt - col - 1;
+		realcol = row;
+		break;
+	default:
+		realrow = row;
+		realcol = col;
+		break;
+	}
+
+	ht->ht_bufcmd[(realrow * ht->ht_row_multiplier) + 1] &=
+	    ~ht->ht_colbits[realcol];
 
 	return 0;
 }
@@ -256,13 +341,36 @@ ht16k33_clearled(ht16k33_t *ht, int row, int col)
 int
 ht16k33_toggleled(ht16k33_t *ht, int row, int col)
 {
+	int	realrow;
+	int	realcol;
+
 	if(ht == NULL ||
 	    !bint_betw(row, 0, BINT_INCL, ht->ht_rowcnt, BINT_EXCL) ||
 	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL))
 		return EINVAL;
 
-	ht->ht_bufcmd[(row * ht->ht_row_multiplier) + 1] ^=
-	    ht->ht_colbits[col];
+	switch(ht->ht_rotate) {
+	case HT16K33_ROTATE_90:
+		realrow = col;
+		realcol = HT16K33_COL_CNT - row - 1;
+		break;
+	case HT16K33_ROTATE_180:
+		realrow = ht->ht_rowcnt - row - 1;
+		realcol = HT16K33_COL_CNT - col - 1;
+		break;
+		break;
+	case HT16K33_ROTATE_270:
+		realrow = ht->ht_rowcnt - col - 1;
+		realcol = row;
+		break;
+	default:
+		realrow = row;
+		realcol = col;
+		break;
+	}
+
+	ht->ht_bufcmd[(realrow * ht->ht_row_multiplier) + 1] ^=
+	    ht->ht_colbits[realcol];
 
 	return 0;
 }
@@ -271,6 +379,9 @@ ht16k33_toggleled(ht16k33_t *ht, int row, int col)
 int
 ht16k33_ledison(ht16k33_t *ht, int row, int col)
 {
+	int	realrow;
+	int	realcol;
+
 	if(ht == NULL ||
 	    !bint_betw(row, 0, BINT_INCL, ht->ht_rowcnt, BINT_EXCL) ||
 	    !bint_betw(col, 0, BINT_INCL, HT16K33_COL_CNT, BINT_EXCL)) {
@@ -278,8 +389,28 @@ ht16k33_ledison(ht16k33_t *ht, int row, int col)
 		return 0;
 	}
 
-	return ht->ht_bufcmd[(row * ht->ht_row_multiplier) + 1] &
-	    ht->ht_colbits[col];
+	switch(ht->ht_rotate) {
+	case HT16K33_ROTATE_90:
+		realrow = col;
+		realcol = HT16K33_COL_CNT - row - 1;
+		break;
+	case HT16K33_ROTATE_180:
+		realrow = ht->ht_rowcnt - row - 1;
+		realcol = HT16K33_COL_CNT - col - 1;
+		break;
+		break;
+	case HT16K33_ROTATE_270:
+		realrow = ht->ht_rowcnt - col - 1;
+		realcol = row;
+		break;
+	default:
+		realrow = row;
+		realcol = col;
+		break;
+	}
+
+	return ht->ht_bufcmd[(realrow * ht->ht_row_multiplier) + 1] &
+	    ht->ht_colbits[realcol];
 }
 
 
@@ -329,13 +460,13 @@ ht16k33_setleds(ht16k33_t *ht, uint8_t *leds)
 	if(ht == NULL || leds == NULL)
 		return EINVAL;
 
+	ht16k33_clearleds(ht);
+
 	cur = leds;
 	for(row = 0; row < ht->ht_rowcnt; ++row) {
 		for(col = 0; col < HT16K33_COL_CNT; ++col) {
 			if(*cur)
 				ht16k33_setled(ht, row, col);
-			else
-				ht16k33_clearled(ht, row, col);
 			++cur;
 		}
 	}

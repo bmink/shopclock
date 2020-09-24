@@ -7,9 +7,18 @@
 #define HT16K33_ROW_CNT		16
 #define HT16K33_COL_CNT		8	
 
+
 #define HT16K33_MODE_DEFAULT	0	/* Default mode 16x8 */
 #define HT16K33_MODE_ADA_8X8	1	/* Adafruit 8x8 matrix mode. */
 #define HT16K33_MODE_CNT	2
+
+#define HT16K33_ROTATE_0	0	/* Default */
+#define HT16K33_ROTATE_90	1
+#define HT16K33_ROTATE_180	2
+#define HT16K33_ROTATE_270	3
+#define HT16K33_ROTATE_CNT	4
+
+#define HT16K33_BRIGHTNESS_MAX	15
 
 #define HT16K33_BUFCMDSIZ		17
 
@@ -17,6 +26,9 @@ typedef struct ht16k33 {
 	int	ht_busnr;
 	int	ht_addr;
 	int	ht_mode;
+	int	ht_rotate;
+
+	int	ht_brightness;
 
 	bstr_t	*ht_filen;
 	int	ht_fd;
@@ -34,9 +46,12 @@ typedef struct ht16k33 {
 } ht16k33_t;
 
 
-
 ht16k33_t *ht16k33_init(int, int, int);
 void ht16k33_uninit(ht16k33_t **);
+
+/* Config functions. */
+int ht16k33_setbrightness(ht16k33_t *, int);
+int ht16k33_setrotate(ht16k33_t *, int);
 
 /* Convenient LED functions */
 int ht16k33_clearleds(ht16k33_t *);
