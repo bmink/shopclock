@@ -8,10 +8,12 @@
 #include "blog.h"
 #include "ht16k33.h"
 #include "digit.h"
+#include "bfs.h"
 
 
 #define I2C_BUSNR	1
 #define I2C_ADDR	0x70
+#define DIGIT_CNT	6
 
 
 #if 0
@@ -44,11 +46,52 @@ int sliceof[30] = {
 };
 #endif
 
+#define KILLFILE	".norun"
+
+int do_digit_loop(int, char *);
+
+
 int
 main(int argc, char **argv)
 {
 	int		ret;
 	char		*execn;
+	int		digitidx;
+
+	execn = basename(argv[0]);
+	if(xstrempty(execn)) {
+		fprintf(stderr, "Can't get executable name\n");
+		goto end_label;
+	}
+
+	unlink(KILLFILE);
+
+	for(digitidx = 0; digitidx < DIGIT_CNT; ++digitidx) {
+		ret = fork();
+		if(ret == 0) {
+			/* Child */
+			do_digit_loop(digitidx, execn);
+		} else
+		if(ret > 0) {
+			/* Parent */
+		} else
+		if (ret < 0) {
+			fprintf(stderr, "Could not fork: %s\n",
+			    strerror(errno));
+			goto end_label;
+		}
+	}
+
+end_label:
+
+	return 0;
+}
+
+
+int
+do_digit_loop(int didx, char *execn)
+{
+	int		ret;
 	ht16k33_t	*ht;
 	int		i;
 	struct timespec ts;
@@ -60,12 +103,6 @@ main(int argc, char **argv)
 
 	ht = NULL;
 
-	execn = basename(argv[0]);
-	if(xstrempty(execn)) {
-		fprintf(stderr, "Can't get executable name\n");
-		goto end_label;
-	}
-
 	ret = blog_init(execn);
 	if(ret != 0) {
 		fprintf(stderr, "Could not initialize logging: %s\n",
@@ -73,17 +110,19 @@ main(int argc, char **argv)
 		goto end_label;
 	}
 
-	ht = ht16k33_init(I2C_BUSNR, I2C_ADDR, HT16K33_MODE_ADA_8X8);
+	ht = ht16k33_init(I2C_BUSNR, I2C_ADDR + didx, HT16K33_MODE_ADA_8X8);
 	if(ht == NULL) {
 		fprintf(stderr, "Could not initialize ht16k33\n");
 		goto end_label;
 	}
 
+/*
 	if(argc == 2 || !xstrcmp(argv[2], "clear")) {
 		ht16k33_clearleds(ht);
 		ht16k33_refreshleds(ht);
 		goto end_label;
 	}
+*/
 
 	ret = ht16k33_setbrightness(ht, 1);
 	if(ret != 0) {
@@ -114,6 +153,10 @@ main(int argc, char **argv)
 	time(&prevdate);
 
 	while(1) {
+
+		if(bfs_isfile(KILLFILE))
+			break;
+
 		nanosleep(&ts, NULL);
 
 		ret = gettimeofday(&nowtv, NULL);
@@ -156,7 +199,13 @@ main(int argc, char **argv)
 
 end_label:
 
-	ht16k33_uninit(&ht);
+	if(ht) {
+		ht16k33_clearleds(ht);
+		ht16k33_refreshleds(ht);
+
+		ht16k33_uninit(&ht);
+	}
+
 	blog_uninit();
 
 	return 0;
