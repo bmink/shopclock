@@ -93,13 +93,14 @@ do_digit_loop(int didx, char *execn)
 {
 	int		ret;
 	ht16k33_t	*ht;
-	int		i;
+	int		num;
 	struct timespec ts;
 	uint8_t		l[12][64];
 	time_t		prevdate;	
 	struct timeval	nowtv;
 	int		slice;
 	struct tm	*nowtm;
+	int		roll;
 
 	ht = NULL;
 
@@ -130,13 +131,11 @@ do_digit_loop(int didx, char *execn)
 		goto end_label;
 	}
 
-/*
-	ret = ht16k33_setrotate(ht, HT16K33_ROTATE_90);
+	ret = ht16k33_setrotate(ht, HT16K33_ROTATE_270);
 	if(ret != 0) {
 		fprintf(stderr, "Could not set rotate.\n");
 		goto end_label;
 	}
-*/
 
 	digit_init();
 
@@ -149,7 +148,6 @@ do_digit_loop(int didx, char *execn)
 	ts.tv_sec = 0;
 	ts.tv_nsec = 1000000000 / 30;
 
-	i = 0;
 	time(&prevdate);
 
 	while(1) {
@@ -171,13 +169,42 @@ do_digit_loop(int didx, char *execn)
 			goto end_label;
 		}
 
-		i = nowtm->tm_sec % 10;
+		roll = 0;
 
-		slice = nowtv.tv_usec / (1000000 / 30);
-		if(slice > 29)
-			slice = 29;
+		switch(didx) {
+		case 0:
+			num = nowtm->tm_hour / 10;
+			break;
+		case 1:
+			num = nowtm->tm_hour % 10;
+			break;
+		case 2:
+			num = nowtm->tm_min / 10;
+			break;
+		case 3:
+			num = nowtm->tm_min % 10;
+			break;
+		case 4:
+			num = nowtm->tm_sec / 10;
+			if(nowtm->tm_sec % 10 == 9)
+				++roll;
+			break;
+		case 5:
+		default:
+			num = nowtm->tm_sec % 10;
+			++roll;
+			break;
+		}
 
-		ht16k33_setleds(ht, l[i] + sliceof[slice] * 8);
+		if(!roll) {
+			slice = 0;
+		} else {
+			slice = nowtv.tv_usec / (1000000 / 30);
+			if(slice > 29)
+				slice = 29;
+		}
+
+		ht16k33_setleds(ht, l[num] + sliceof[slice] * 8);
 
 /*
 		if(slice < 15) {
