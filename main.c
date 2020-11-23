@@ -205,7 +205,8 @@ do_digit_loop(int didx, char *execn)
 		case 0:
 			/* Hour 1 */
 			num = nowtm->tm_hour / 10;
-			if(nowtm->tm_sec == 59 && nowtm->tm_hour % 10 == 9)
+			if(nowtm->tm_sec == 59 && nowtm->tm_min == 59 &&
+			    nowtm->tm_hour % 10 == 9)
 				++roll;
 			break;
 		case 1:
