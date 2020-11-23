@@ -170,7 +170,8 @@ do_digit_loop(int didx, char *execn)
 	}
 
 	memcpy(l, digit, (maxnum + 1) * 64);
-	memcpy(&l[maxnum + 1][0], digit, 128);
+	memcpy(&l[maxnum + 1][0], digit, 128); /* Copy 0 and 1 at the end for
+						 * rolling over. */
 	
 	ht16k33_clearleds(ht);
 
