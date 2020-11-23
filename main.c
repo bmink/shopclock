@@ -101,6 +101,7 @@ do_digit_loop(int didx, char *execn)
 	int		slice;
 	struct tm	*nowtm;
 	int		roll;
+	int		maxnum;
 
 	ht = NULL;
 
@@ -139,9 +140,37 @@ do_digit_loop(int didx, char *execn)
 
 	digit_init();
 
-	memcpy(l, digit, 10 * 64);
-	memcpy(&l[10][0], digit, 128);
+	/* Set up the bitmaps. */
+	switch(didx) {
+	case 0:
+		/* Hour 1 */
+		maxnum = 2;
+		break;
+	case 1:
+		/* Hour 2 */
+		maxnum = 9;
+		break;
+	case 2:
+		/* Minute 1 */
+		maxnum = 5;
+		break;
+	case 3:
+		/* Minute 2 */
+		maxnum = 9;
+		break;
+	case 4:
+		/* Second 1 */
+		maxnum = 5;
+		break;
+	case 5:
+	default:
+		/* Second 2 */
+		maxnum = 9;
+		break;
+	}
 
+	memcpy(l, digit, (maxnum + 1) * 64);
+	memcpy(&l[maxnum + 1][0], digit, 128);
 	
 	ht16k33_clearleds(ht);
 
@@ -173,24 +202,38 @@ do_digit_loop(int didx, char *execn)
 
 		switch(didx) {
 		case 0:
+			/* Hour 1 */
 			num = nowtm->tm_hour / 10;
+			if(nowtm->tm_sec == 59 && nowtm->tm_hour % 10 == 9)
+				++roll;
 			break;
 		case 1:
+			/* Hour 2 */
 			num = nowtm->tm_hour % 10;
+			if(nowtm->tm_sec == 59 && nowtm->tm_min == 59)
+				++roll;
 			break;
 		case 2:
+			/* Minute 1 */
 			num = nowtm->tm_min / 10;
+			if(nowtm->tm_sec == 59 && nowtm->tm_min % 10 == 9)
+				++roll;
 			break;
 		case 3:
+			/* Minute 2 */
 			num = nowtm->tm_min % 10;
+			if(nowtm->tm_sec == 59)
+				++roll;
 			break;
 		case 4:
+			/* Second 1 */
 			num = nowtm->tm_sec / 10;
 			if(nowtm->tm_sec % 10 == 9)
 				++roll;
 			break;
 		case 5:
 		default:
+			/* Second 2 */
 			num = nowtm->tm_sec % 10;
 			++roll;
 			break;
