@@ -126,7 +126,7 @@ do_digit_loop(int didx, char *execn)
 	}
 */
 
-	ret = ht16k33_setbrightness(ht, 1);
+	ret = ht16k33_setbrightness(ht, 10);
 	if(ret != 0) {
 		fprintf(stderr, "Could not set brightness.\n");
 		goto end_label;

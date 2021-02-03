@@ -150,7 +150,7 @@ ht16k33_setbrightness(ht16k33_t *ht, int brightness)
 	    HT16K33_BRIGHTNESS_MAX, BINT_INCL))
 		return EINVAL;
 
-	/* Full brightness. */
+	/* Set brightness. */
 	ret = ht16k33_write_byte(ht,
 	    HT16K33_CMD_BRIGHTNESS | (uint8_t) brightness);
 	if(ret != 0) {
